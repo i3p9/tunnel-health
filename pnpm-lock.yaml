@@ -164,7 +164,9 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  backend:
     devDependencies:
       wrangler:
         specifier: ^4.0.0

@@ -1,0 +1,20 @@
+{
+  "name": "@tunnel-health/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "wrangler dev --test-scheduled",
+    "test": "node --test",
+    "deploy": "wrangler deploy",
+    "db:local": "wrangler d1 migrations apply tunnel-health --local",
+    "db:remote": "wrangler d1 migrations apply tunnel-health --remote",
+    "check": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

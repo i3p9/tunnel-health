@@ -4,6 +4,16 @@ Record Cloudflare Tunnel connectivity every minute in D1, as a load-shedding
 tracker for a Dhaka homelab without battery backup. This is a standalone project;
 the existing homelab status page is independent.
 
+## Repository layout
+
+```text
+backend/       Worker, D1 migrations, tests and Wrangler configuration
+frontend/      Reserved workspace path for a future dashboard (not created yet)
+```
+
+Run the commands below from the repository root. Root scripts forward to the
+backend package; the pnpm workspace can also include a future frontend.
+
 ## What it does
 
 A scheduled Cloudflare Worker queries one tunnel's official API and inserts a
@@ -35,16 +45,16 @@ Requires Node.js 24+ and a Cloudflare account with the tunnel already configured
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm exec wrangler login
-pnpm exec wrangler d1 create tunnel-health
+pnpm --dir backend exec wrangler login
+pnpm --dir backend exec wrangler d1 create tunnel-health
 ```
 
-Edit `wrangler.jsonc`: replace the D1 database ID, Cloudflare account ID and tunnel
+Edit `backend/wrangler.jsonc`: replace the D1 database ID, Cloudflare account ID and tunnel
 ID. Create a Cloudflare API token scoped to the account with **Cloudflare Tunnel:
 Read** permission. This is an API token, not the tunnel connector token.
 
 ```sh
-pnpm exec wrangler secret put CLOUDFLARE_API_TOKEN
+pnpm --dir backend exec wrangler secret put CLOUDFLARE_API_TOKEN
 pnpm db:remote
 pnpm deploy
 ```
@@ -67,8 +77,8 @@ requests per five minutes versus the shared 1,200-request limit.
 pnpm test
 pnpm check
 pnpm db:local
-cp .dev.vars.example .dev.vars
-# Set a real read token in .dev.vars and account/tunnel IDs in wrangler.jsonc.
+cp backend/.dev.vars.example backend/.dev.vars
+# Set a real read token in backend/.dev.vars and account/tunnel IDs in backend/wrangler.jsonc.
 pnpm dev
 ```
 
@@ -80,14 +90,14 @@ curl 'http://localhost:8787/__scheduled?cron=*+*+*+*+*'
 
 The local handler reads the real tunnel API but writes to local D1. Tests use
 mocked HTTP responses and real in-memory SQLite, requiring no credentials.
-Never commit `.dev.vars`. GitHub Actions runs tests and a bundle dry run.
+Never commit `backend/.dev.vars`. GitHub Actions runs tests and a bundle dry run.
 
 ## Inspect collected data
 
 ```sh
-pnpm exec wrangler d1 execute tunnel-health --remote --command "SELECT * FROM observations ORDER BY scheduled_at DESC LIMIT 20"
-pnpm exec wrangler d1 execute tunnel-health --remote --command "SELECT * FROM outages ORDER BY first_down_at DESC LIMIT 20"
-pnpm exec wrangler tail
+pnpm --dir backend exec wrangler d1 execute tunnel-health --remote --command "SELECT * FROM observations ORDER BY scheduled_at DESC LIMIT 20"
+pnpm --dir backend exec wrangler d1 execute tunnel-health --remote --command "SELECT * FROM outages ORDER BY first_down_at DESC LIMIT 20"
+pnpm --dir backend exec wrangler tail
 ```
 
 Check that recent samples exist and that errors are not recurring. Database

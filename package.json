@@ -3,15 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@12.4.2",
-  "type": "module",
-  "engines": { "node": ">=24" },
-  "scripts": {
-    "dev": "wrangler dev --test-scheduled",
-    "test": "node --test",
-    "deploy": "wrangler deploy",
-    "db:local": "wrangler d1 migrations apply tunnel-health --local",
-    "db:remote": "wrangler d1 migrations apply tunnel-health --remote",
-    "check": "wrangler deploy --dry-run"
+  "engines": {
+    "node": ">=24"
   },
-  "devDependencies": { "wrangler": "^4.0.0" }
+  "scripts": {
+    "dev": "pnpm --filter @tunnel-health/backend dev",
+    "test": "pnpm --filter @tunnel-health/backend test",
+    "deploy": "pnpm --filter @tunnel-health/backend deploy",
+    "db:local": "pnpm --filter @tunnel-health/backend db:local",
+    "db:remote": "pnpm --filter @tunnel-health/backend db:remote",
+    "check": "pnpm --filter @tunnel-health/backend check"
+  }
 }
