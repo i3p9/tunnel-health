@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tunnel-health",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-17",
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": ["* * * * *"] },
+  "vars": {
+    "CLOUDFLARE_ACCOUNT_ID": "REPLACE_WITH_ACCOUNT_ID",
+    "TUNNEL_ID": "REPLACE_WITH_TUNNEL_ID"
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "tunnel-health",
+    "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+    "migrations_dir": "migrations"
+  }]
+}
