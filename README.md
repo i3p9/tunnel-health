@@ -1,47 +1,32 @@
 # Tunnel Health
 
-Record Cloudflare Tunnel connectivity every minute in D1, as a load-shedding
-tracker for a Dhaka homelab without battery backup. This is a standalone project;
-the existing homelab status page is independent.
+Load-shedding tracker for a Dhaka homelab. A Cloudflare Worker polls the tunnel
+API every minute and stores connectivity changes in D1.
 
-## Repository layout
+`backend/` contains the Worker, migrations and tests. A future `frontend/` can
+join the pnpm workspace.
 
-```text
-backend/       Worker, D1 migrations, tests and Wrangler configuration
-frontend/      Reserved workspace path for a future dashboard (not created yet)
-```
+## Storage
 
-Run the commands below from the repository root. Root scripts forward to the
-backend package; the pnpm workspace can also include a future frontend.
+- `tunnel_state`: one row per tunnel, updated each check. Includes freshness,
+  raw Cloudflare status, connection timestamps and the latest error.
+- `transitions`: initial state and subsequent changes. `healthy`/`degraded` map
+  to `up`; `down`, `inactive` and `unknown` remain distinct.
+- `outages`: view of down periods, marked `recovered`, `open` or `uncertain`.
 
-## What it does
+Failed checks become `unknown`. Missed minutes insert an unknown boundary on the
+next check. Check `tunnel_state.scheduled_at` before treating an open outage as
+ongoing. Duplicate/stale invocations are ignored; updates and history inserts
+are atomic. Migration 0002 imports existing observations and leaves them intact;
+new checks no longer write to that table.
 
-A scheduled Cloudflare Worker queries one tunnel's official API and inserts a
-timestamped observation. No browser or homelab process needs to remain online.
-There is no public data endpoint or dashboard yet. Credentials stay in a Worker
-secret. The collector has no runtime package dependencies.
-
-- `healthy` and `degraded` mean connected; `down` means disconnected.
-- API failures, timeouts and invalid responses are stored as `unknown`.
-- `inactive` is preserved separately; it is not assumed to be a power outage.
-- Each scheduled minute has a unique key, so duplicate deliveries keep the first
-  saved observation. Inserts may arrive out of order without corrupting events.
-- The `outages` SQL view groups consecutive down samples. Adjacent healthy or
-  degraded samples establish recovery. Unknown/inactive samples and missing
-  minutes end a segment with an uncertain outcome. A final down segment is open;
-  always check observation freshness before calling an open event ongoing.
-- Connection timestamps from Cloudflare are preserved for future analysis.
-  Event boundaries currently use observation times, not inferred electricity
-  timestamps. Boot delays and outages shorter than the poll interval affect accuracy.
-
-All timestamps use UTC ISO strings. A future dashboard should use `Asia/Dhaka`
-for display and daily aggregation. An outage crossing midnight must be split
-across the relevant local days when calculating daily totals. Uncertain segments
-must not be counted as known continuous downtime.
+Timestamps are UTC; use `Asia/Dhaka` for charts. Boundaries reflect detection,
+not exact power-loss times. Short outages can be missed. History grows only on
+changes or monitoring gaps; the current-state row still gets 1,440 updates/day.
 
 ## Setup
 
-Requires Node.js 24+ and a Cloudflare account with the tunnel already configured.
+Node 24+, pnpm. Run from the repository root:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -49,9 +34,8 @@ pnpm --dir backend exec wrangler login
 pnpm --dir backend exec wrangler d1 create tunnel-health
 ```
 
-Edit `backend/wrangler.jsonc`: replace the D1 database ID, Cloudflare account ID and tunnel
-ID. Create a Cloudflare API token scoped to the account with **Cloudflare Tunnel:
-Read** permission. This is an API token, not the tunnel connector token.
+Set account, tunnel and database IDs in `backend/wrangler.jsonc`. Create an
+account-scoped API token with **Cloudflare Tunnel: Read**, then:
 
 ```sh
 pnpm --dir backend exec wrangler secret put CLOUDFLARE_API_TOKEN
@@ -59,70 +43,33 @@ pnpm db:remote
 pnpm deploy
 ```
 
-Wrangler may offer to create the Worker while uploading its first secret. The
-cron expression `* * * * *` runs every minute. Trigger changes can take up to 15
-minutes to propagate. No Cloudflare Pro domain is needed. The configuration
-disables workers.dev and preview URLs; this is a scheduled collector only.
+Cron: `* * * * *`. No public HTTP endpoint. Fits the free tier for one tunnel;
+allow up to 15 minutes for cron configuration to propagate.
 
-At one sample per minute, expect 1,440 invocations and base row inserts daily,
-plus index-write accounting. This is below the free daily allowances of 100,000
-Worker requests and 100,000 D1 row writes, assuming other account usage leaves
-room. Free scheduled Workers have a 10 ms CPU budget; network/database waiting
-does not count, but check actual CPU usage after deployment. API usage is five
-requests per five minutes versus the shared 1,200-request limit.
-
-## Local verification
+## Development
 
 ```sh
 pnpm test
 pnpm check
 pnpm db:local
 cp backend/.dev.vars.example backend/.dev.vars
-# Set a real read token in backend/.dev.vars and account/tunnel IDs in backend/wrangler.jsonc.
+# Add the API token to backend/.dev.vars (gitignored).
 pnpm dev
-```
-
-In another terminal, invoke the local scheduled handler:
-
-```sh
 curl 'http://localhost:8787/__scheduled?cron=*+*+*+*+*'
 ```
 
-The local handler reads the real tunnel API but writes to local D1. Tests use
-mocked HTTP responses and real in-memory SQLite, requiring no credentials.
-Never commit `backend/.dev.vars`. GitHub Actions runs tests and a bundle dry run.
+Local runs query the real API and write local D1. Tests use mocked HTTP and
+SQLite. CI runs tests and a bundle check.
 
-## Inspect collected data
+## Inspect
 
 ```sh
-pnpm --dir backend exec wrangler d1 execute tunnel-health --remote --command "SELECT * FROM observations ORDER BY scheduled_at DESC LIMIT 20"
+pnpm --dir backend exec wrangler d1 execute tunnel-health --remote --command "SELECT * FROM tunnel_state"
+pnpm --dir backend exec wrangler d1 execute tunnel-health --remote --command "SELECT * FROM transitions ORDER BY scheduled_at DESC LIMIT 20"
 pnpm --dir backend exec wrangler d1 execute tunnel-health --remote --command "SELECT * FROM outages ORDER BY first_down_at DESC LIMIT 20"
 pnpm --dir backend exec wrangler tail
 ```
 
-Check that recent samples exist and that errors are not recurring. Database
-failures fail the invocation; API errors are persisted as unknown observations
-and produce a log entry without credentials or API response bodies.
-
-Observations are retained indefinitely for now (about 525,600/year). Monitor D1
-storage and add a retention/rollup policy before reaching its free database size
-limit. The outage view scans history, appropriate for initial manual queries;
-materialize aggregates before building a heavily queried dashboard.
-
-## GitHub
-
-This folder is intended to be its own Git repository. After creating an empty
-GitHub repository, connect and push it:
-
-```sh
-git remote add origin git@github.com:YOUR_USERNAME/tunnel-health.git
-git push -u origin main
-```
-
-## References
-
-- [Tunnel API](https://developers.cloudflare.com/api/resources/zero_trust/subresources/tunnels/subresources/cloudflared/methods/get/)
-- [Cron triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
-- [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
-- [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/)
-- [API rate limits](https://developers.cloudflare.com/fundamentals/api/reference/limits/)
+[API](https://developers.cloudflare.com/api/resources/zero_trust/subresources/tunnels/subresources/cloudflared/methods/get/) ·
+[Cron](https://developers.cloudflare.com/workers/configuration/cron-triggers/) ·
+[D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/)

@@ -38,12 +38,19 @@ export async function collect(event, env, fetcher = fetch) {
   } catch (cause) {
     error = cause?.name === 'TimeoutError' ? 'timeout' : 'request_failed';
   }
-  // Scheduled time is the identity: retries cannot duplicate a minute's sample.
-  // No mutable incident state: the SQL view derives events chronologically.
-  await env.DB.prepare(`INSERT INTO observations
-    (tunnel_id, scheduled_at, observed_at, status, conns_active_at, conns_inactive_at, error)
-    VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(tunnel_id, scheduled_at) DO NOTHING`)
-    .bind(env.TUNNEL_ID, scheduledAt, new Date().toISOString(), status, activeAt, inactiveAt, error)
+  const state = status === 'healthy' || status === 'degraded' ? 'up' : status;
+  // One atomic upsert: triggers append history only on a change or monitoring gap.
+  // Older/duplicate invocations cannot overwrite a newer check.
+  await env.DB.prepare(`INSERT INTO tunnel_state
+    (tunnel_id, scheduled_at, observed_at, status, raw_status, conns_active_at, conns_inactive_at, error)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(tunnel_id) DO UPDATE SET
+      scheduled_at=excluded.scheduled_at, observed_at=excluded.observed_at,
+      status=excluded.status, raw_status=excluded.raw_status,
+      conns_active_at=excluded.conns_active_at, conns_inactive_at=excluded.conns_inactive_at,
+      error=excluded.error
+    WHERE excluded.scheduled_at > tunnel_state.scheduled_at`)
+    .bind(env.TUNNEL_ID, scheduledAt, new Date().toISOString(), state, status, activeAt, inactiveAt, error)
     .run();
   if (error) console.warn(JSON.stringify({ scheduledAt, error }));
 }
