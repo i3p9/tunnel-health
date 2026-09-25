@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tunnel Health</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="page">
+    <header><div><h1>Tunnel Health</h1><p>Dhaka tunnel monitor · Times shown in Bangladesh Standard Time</p></div><div class="header-right"><span id="clock">--:--:-- BST</span><small id="refresh-label">Updates every minute</small></div></header>
+    <nav><a href="#overview">Overview</a><a href="#daily">Daily record</a><a href="#history">History</a><a href="#incidents">Outages</a></nav>
+    <main>
+      <section id="overview">
+        <h2>Overview</h2>
+        <div class="summary"><div class="connection"><span class="field-label">Current check</span><strong id="status">Loading…</strong><p id="status-note" role="status">Loading the latest check.</p></div><dl><div><dt>Last checked</dt><dd id="last-check">—</dd></div><div><dt>Cloudflare status</dt><dd id="raw-status">—</dd></div><div><dt>Check detail</dt><dd id="detail">—</dd></div><div><dt>Recording since</dt><dd id="first-check">—</dd></div></dl></div>
+        <div class="statistics"><div><span>Outages detected</span><strong id="total-outages">—</strong><small>All recorded history</small></div><div><span>Outages, last 7 days</span><strong id="recent-outages">—</strong><small>Calendar days</small></div><div><span>Average per day</span><strong id="average-day">—</strong><small>Since first check</small></div><div><span>Average duration</span><strong id="average-duration">—</strong><small>Recovered outages only</small></div><div><span>Longest duration</span><strong id="longest-duration">—</strong><small>Recovered outages only</small></div><div><span>Total recovered time</span><strong id="total-duration">—</strong><small>Recovered outages only</small></div></div>
+      </section>
+      <section id="daily"><div class="section-head"><div><h2>Daily record</h2><p>Last 30 calendar days, by the day an outage was first detected.</p></div><div class="switch" role="group" aria-label="Daily chart measure"><button type="button" data-measure="outage_count" class="selected">Outages</button><button type="button" data-measure="recovered_seconds">Recovered time</button></div></div><div id="chart" class="chart" role="img" aria-label="Daily outage chart"></div><div class="chart-axis"><span id="chart-start">—</span><span id="chart-end">—</span></div><p class="note">Recovered time excludes open and uncertain outages. An outage crossing midnight is assigned to its start day. Tunnel outages are a proxy for load shedding; the monitor cannot identify the cause.</p></section>
+      <section id="history"><div class="section-head"><div><h2>Connection history</h2><p>Detected tunnel states and gaps in monitoring.</p></div><div class="switch" role="group" aria-label="History range"><button type="button" data-range="24" class="selected">24 hours</button><button type="button" data-range="168">7 days</button></div></div><div id="timeline" class="timeline" role="img" aria-label="Connection status timeline"></div><div id="ticks" class="ticks"></div><div class="legend"><span><i class="swatch up"></i>Connected</span><span><i class="swatch down"></i>Down</span><span><i class="swatch inactive"></i>Inactive</span><span><i class="swatch unknown"></i>Unknown / no check</span></div><p class="note">Changes are timestamped when detected. They do not identify the exact moment connectivity changed.</p></section>
+      <section id="incidents"><h2>Recent outages</h2><p>The 20 most recent detected outages.</p><div class="table-wrap"><table><thead><tr><th>First detected</th><th>Recovered</th><th>Duration</th><th>Outcome</th></tr></thead><tbody id="incidents-body"><tr><td colspan="4">Loading…</td></tr></tbody></table></div></section>
+    </main><footer><span>Data from Cloudflare tunnel checks</span><span id="updated">—</span></footer>
+  </div>
+</body>
+</html>

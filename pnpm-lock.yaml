@@ -169,7 +169,7 @@ importers:
   backend:
     devDependencies:
       wrangler:
-        specifier: ^4.0.0
+        specifier: ^4.132.0
         version: 4.132.0
 
 packages:

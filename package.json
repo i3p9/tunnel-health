@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "pnpm --filter @tunnel-health/backend dev",
     "test": "pnpm --filter @tunnel-health/backend test",
-    "deploy": "pnpm --filter @tunnel-health/backend deploy",
+    "deploy": "pnpm --filter @tunnel-health/backend run deploy",
     "db:local": "pnpm --filter @tunnel-health/backend db:local",
     "db:remote": "pnpm --filter @tunnel-health/backend db:remote",
     "check": "pnpm --filter @tunnel-health/backend check"

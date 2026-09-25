@@ -1,19 +1,36 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tunnel-health",
-  "main": "src/worker.js",
-  "compatibility_date": "2026-09-17",
-  "workers_dev": false,
-  "preview_urls": false,
-  "triggers": { "crons": ["* * * * *"] },
-  "vars": {
-    "CLOUDFLARE_ACCOUNT_ID": "REPLACE_WITH_ACCOUNT_ID",
-    "TUNNEL_ID": "REPLACE_WITH_TUNNEL_ID"
-  },
-  "d1_databases": [{
-    "binding": "DB",
-    "database_name": "tunnel-health",
-    "database_id": "REPLACE_WITH_D1_DATABASE_ID",
-    "migrations_dir": "migrations"
-  }]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "tunnel-health",
+	"main": "src/worker.js",
+	"compatibility_date": "2026-09-17",
+	"workers_dev": false,
+	"preview_urls": false,
+	"routes": [
+		{ "pattern": "power.1100008.xyz", "custom_domain": true },
+	],
+	"assets": {
+		"directory": "../frontend",
+		"binding": "ASSETS",
+		"run_worker_first": ["/api/*"],
+	},
+	"triggers": { "crons": ["*/1 * * * *"] },
+	"vars": {
+		"CLOUDFLARE_ACCOUNT_ID": "5c36519084c7f92e2279ee099df50984",
+		"TUNNEL_ID": "261dc453-ced7-4fb8-a961-d83777b596f4",
+	},
+	"observability": {
+		"logs": {
+			"enabled": true,
+			"invocation_logs": true,
+			"persist": true,
+		},
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "tunnel-health",
+			"database_id": "ae65042f-1f36-47f9-b0bc-170ae62e2975",
+			"migrations_dir": "migrations",
+		},
+	],
 }
