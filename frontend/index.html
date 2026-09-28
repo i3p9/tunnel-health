@@ -3,24 +3,83 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>Tunnel Health</title>
   <link rel="stylesheet" href="/style.css">
-  <script src="/app.js" defer></script>
+  <script src="/app.js" type="module"></script>
 </head>
 <body>
+  <a class="skip-link" href="#history">Skip to records</a>
   <div class="page">
-    <header><div><h1>Tunnel Health</h1><p>Dhaka tunnel monitor · Times shown in Bangladesh Standard Time</p></div><div class="header-right"><span id="clock">--:--:-- BST</span><small id="refresh-label">Updates every minute</small></div></header>
-    <nav><a href="#overview">Overview</a><a href="#daily">Daily record</a><a href="#history">History</a><a href="#incidents">Outages</a></nav>
-    <main>
-      <section id="overview">
-        <h2>Overview</h2>
-        <div class="summary"><div class="connection"><span class="field-label">Current check</span><strong id="status">Loading…</strong><p id="status-note" role="status">Loading the latest check.</p></div><dl><div><dt>Last checked</dt><dd id="last-check">—</dd></div><div><dt>Cloudflare status</dt><dd id="raw-status">—</dd></div><div><dt>Check detail</dt><dd id="detail">—</dd></div><div><dt>Recording since</dt><dd id="first-check">—</dd></div></dl></div>
-        <div class="statistics"><div><span>Outages detected</span><strong id="total-outages">—</strong><small>All recorded history</small></div><div><span>Outages, last 7 days</span><strong id="recent-outages">—</strong><small>Calendar days</small></div><div><span>Average per day</span><strong id="average-day">—</strong><small>Since first check</small></div><div><span>Average duration</span><strong id="average-duration">—</strong><small>Recovered outages only</small></div><div><span>Longest duration</span><strong id="longest-duration">—</strong><small>Recovered outages only</small></div><div><span>Total recovered time</span><strong id="total-duration">—</strong><small>Recovered outages only</small></div></div>
-      </section>
-      <section id="daily"><div class="section-head"><div><h2>Daily record</h2><p>Last 30 calendar days, by the day an outage was first detected.</p></div><div class="switch" role="group" aria-label="Daily chart measure"><button type="button" data-measure="outage_count" class="selected">Outages</button><button type="button" data-measure="recovered_seconds">Recovered time</button></div></div><div id="chart" class="chart" role="img" aria-label="Daily outage chart"></div><div class="chart-axis"><span id="chart-start">—</span><span id="chart-end">—</span></div><p class="note">Recovered time excludes open and uncertain outages. An outage crossing midnight is assigned to its start day. Tunnel outages are a proxy for load shedding; the monitor cannot identify the cause.</p></section>
-      <section id="history"><div class="section-head"><div><h2>Connection history</h2><p>Detected tunnel states and gaps in monitoring.</p></div><div class="switch" role="group" aria-label="History range"><button type="button" data-range="24" class="selected">24 hours</button><button type="button" data-range="168">7 days</button></div></div><div id="timeline" class="timeline" role="img" aria-label="Connection status timeline"></div><div id="ticks" class="ticks"></div><div class="legend"><span><i class="swatch up"></i>Connected</span><span><i class="swatch down"></i>Down</span><span><i class="swatch inactive"></i>Inactive</span><span><i class="swatch unknown"></i>Unknown / no check</span></div><p class="note">Changes are timestamped when detected. They do not identify the exact moment connectivity changed.</p></section>
-      <section id="incidents"><h2>Recent outages</h2><p>The 20 most recent detected outages.</p><div class="table-wrap"><table><thead><tr><th>First detected</th><th>Recovered</th><th>Duration</th><th>Outcome</th></tr></thead><tbody id="incidents-body"><tr><td colspan="4">Loading…</td></tr></tbody></table></div></section>
-    </main><footer><span>Data from Cloudflare tunnel checks</span><span id="updated">—</span></footer>
+    <header class="masthead">
+      <div class="identity"><h1>Tunnel Health</h1><span>Dhaka <span class="timezone">/ UTC+06</span></span></div>
+      <div class="refresh"><span id="updated">Loading…</span><button id="refresh" type="button">Refresh</button></div>
+    </header>
+    <noscript><p class="notice">Enable JavaScript to load the monitoring records.</p></noscript>
+    <p id="notice" class="notice" role="status" hidden></p>
+    <main class="report">
+      <aside class="summary" aria-label="Current condition and statistics">
+        <section aria-labelledby="condition-heading">
+          <h2 id="condition-heading">Current check</h2>
+          <p id="status" class="condition">Loading…</p>
+          <dl class="check-details">
+            <dt>Checked</dt><dd id="last-check">—</dd>
+            <dt>Cloudflare</dt><dd id="raw-status">—</dd>
+          </dl>
+        </section>
+        <section aria-labelledby="summary-heading">
+          <h2 id="summary-heading">Recorded history</h2>
+          <p id="record-span" class="small">—</p>
+          <table class="summary-table"><caption class="sr-only">Statistics across the recorded history</caption><tbody>
+            <tr><th scope="row">Outages detected</th><td id="total-outages">—</td></tr>
+            <tr><th scope="row">Per calendar day</th><td id="average-day">—</td></tr>
+            <tr><th scope="row">Recoveries recorded</th><td id="recoveries">—</td></tr>
+            <tr class="group-start"><th scope="row" title="Recovered outages only">Average duration</th><td id="average-duration">—</td></tr>
+            <tr><th scope="row" title="Recovered outages only">Longest duration</th><td id="longest-duration">—</td></tr>
+            <tr><th scope="row" title="Recovered outages only">Total duration</th><td id="total-duration">—</td></tr>
+          </tbody></table>
+        </section>
+      </aside>
+
+      <div class="records">
+        <section id="history" aria-labelledby="history-heading">
+          <div class="section-heading"><h2 id="history-heading">Connection history</h2><label>Period <select id="hours"><option value="24">24 hours</option><option value="168" selected>7 days</option></select></label></div>
+          <div id="timeline" class="timeline" aria-label="Recorded connection states">Loading history…</div>
+          <div id="ticks" class="ticks"></div>
+          <ul class="legend" aria-label="Connection states"><li><span class="swatch up"></span>Connected</li><li><span class="swatch down"></span>Down</li><li><span class="swatch inactive"></span>Inactive</li><li><span class="swatch unknown"></span>Unknown</li><li><span class="swatch unrecorded"></span>Not recorded</li></ul>
+          <details class="data-details"><summary>State intervals</summary><div class="table-scroll" tabindex="0" role="region" aria-label="State intervals"><table>
+            <caption class="sr-only">State intervals in the selected period</caption>
+            <thead><tr><th scope="col">From</th><th scope="col">To</th><th scope="col">State</th></tr></thead><tbody id="interval-rows"><tr><td colspan="3">Loading…</td></tr></tbody>
+          </table></div></details>
+        </section>
+
+        <section id="daily" aria-labelledby="daily-heading">
+          <div class="section-heading"><h2 id="daily-heading">Daily record</h2><div class="controls">
+            <label>Period <select id="days"><option value="7">7 days</option><option value="30">30 days</option></select></label>
+          </div></div>
+          <p id="chart-unit" class="chart-unit">Outages</p>
+          <div id="chart" class="chart" aria-label="Daily records">Loading daily records…</div>
+          <p id="chart-key" class="chart-key" hidden><span class="swatch unrecorded"></span>Not recorded</p>
+          <p id="day-readout" class="readout" aria-live="polite" hidden></p>
+          <details id="daily-details" class="data-details"><summary>Daily figures</summary>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Daily figures"><table>
+              <caption class="sr-only">Daily detected outages, Bangladesh time</caption>
+              <thead><tr><th scope="col">Date</th><th scope="col" class="number">Outages</th><th scope="col">Record</th></tr></thead>
+              <tbody id="daily-rows"><tr><td colspan="3">Loading…</td></tr></tbody>
+            </table></div>
+          </details>
+        </section>
+
+        <section id="incidents" aria-labelledby="incidents-heading">
+          <div class="section-heading"><h2 id="incidents-heading">Recent outages</h2></div>
+          <div class="table-scroll" tabindex="0" role="region" aria-label="Recent outages"><table class="ledger">
+            <caption class="sr-only">Recent outages, in Bangladesh time</caption>
+            <thead><tr><th scope="col">First detected</th><th scope="col">Recovered</th><th scope="col" class="number">Duration</th><th scope="col">Outcome</th></tr></thead>
+            <tbody id="incidents-body"><tr><td colspan="4">Loading outage records…</td></tr></tbody>
+          </table></div>
+        </section>
+      </div>
+    </main>
   </div>
 </body>
 </html>

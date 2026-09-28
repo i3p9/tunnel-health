@@ -103,8 +103,9 @@ test('configuration and database failures fail the invocation', async () => {
 
 test('dashboard API reads current state, history, and outages after cleanup', async () => {
   const { db, env } = setup();
-  await collect(event(0), env, reply('down'));
-  await collect(event(1), env, reply('healthy'));
+  const start = Date.now() - 120000;
+  await collect({ scheduledTime: start }, env, reply('down'));
+  await collect({ scheduledTime: start + 60000 }, env, reply('healthy'));
   const response = await worker.fetch(new Request('https://example.test/api/dashboard'), env);
   assert.equal(response.status, 200);
   const result = await response.json();

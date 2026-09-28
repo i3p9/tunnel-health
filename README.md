@@ -7,7 +7,7 @@ API every minute and stores connectivity changes in D1.
 static dashboard served by the same Worker.
 
 The dashboard shows current status, a 24-hour or 7-day state timeline, recent
-outages, and 30-day charts of outage count or recovered duration. Summary
+outages, and 7-day or 30-day charts of outage count. Summary
 statistics use the full retained transition history. Durations count only
 recovered outages; an open or uncertain period has no reliable end time.
 Tunnel downtime is a proxy for load shedding, not proof of its cause.
